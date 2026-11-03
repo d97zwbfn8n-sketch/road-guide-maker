@@ -1,0 +1,458 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>道路案内画像メーカー Ver.3.00 最適化版</title><style>*{box-sizing:border-box}body{margin:0;background:#f1f3f5;color:#1b1b1b;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN',sans-serif}.wrap{max-width:850px;margin:auto;padding:16px}h1{font-size:23px;margin:8px 0 4px}.note{color:#555;font-size:13px;line-height:1.6}.panel{background:white;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 2px 10px #0001}label{display:block;font-weight:700;font-size:14px;margin:12px 0 5px}input[type=text],input[type=number],input[type=file]{width:100%;font-size:16px;padding:11px;border:1px solid #bbb;border-radius:8px}input[type=range]{width:100%}.preview{width:100%;display:block;background:repeating-conic-gradient(#ddd 0% 25%,#fff 0% 50%) 50%/20px 20px;touch-action:none;border-radius:6px}button{border:0;border-radius:10px;padding:13px 17px;font-size:16px;font-weight:700;background:#e32d29;color:white;cursor:pointer;width:100%;margin-top:8px}.secondary{background:#344054}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.small{font-size:12px;color:#666}#download{display:none;margin:12px 0;padding:14px;background:#dff5e5;color:#12562a;border-radius:10px;text-align:center;font-weight:bold}#download a{color:#12562a}canvas{max-width:100%}
+/* compact mobile layout */
+@media(max-width:650px){.wrap{padding:7px}.wrap h1{font-size:17px;margin:3px 4px}.wrap>p.note{display:none}.panel{padding:9px;margin:6px 0;border-radius:10px}.preview-panel{padding:6px;top:0}.preview-panel .preview{max-height:27dvh}.preview-panel button{padding:9px 6px;font-size:13px;margin-top:4px}.settings-panel label{font-size:12px;margin:6px 0 3px}.settings-panel input[type=text],.settings-panel input[type=number],.settings-panel input[type=file]{padding:8px}.settings-panel button{font-size:13px;padding:9px 5px}.settings-panel .small{font-size:11px;line-height:1.35}.tabs button{padding:9px 3px;font-size:12px}.row{gap:6px}.preview-panel .row{gap:5px}.preview-panel .row label{font-size:11px}.preview-panel input[type=range]{height:23px}}
+.compact-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.compact-actions button{margin:0!important}.compact-actions #saveBubble{grid-column:span 2}.bubble-controls{padding:7px 2px}.bubble-controls summary{cursor:pointer;font-weight:700;font-size:13px;padding:5px}.bubble-controls .row{margin-top:5px}.bubble-controls input[type=color]{width:100%;height:38px;border:1px solid #ccc;border-radius:7px;background:white}.bubble-controls label{font-size:12px;margin:4px 0}.bubble-controls .check{display:flex;gap:6px;align-items:center;font-size:12px}
+/* iPhone: preview always visible while editing */
+.preview-panel{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;margin:6px 0;padding:9px 10px;background:#fff;box-shadow:0 3px 18px #0003}
+.preview-panel .preview{width:100%;max-height:32dvh;object-fit:contain;touch-action:none}
+.preview-panel #save{padding:10px;margin-top:5px;font-size:14px}
+.preview-panel .note{display:none}
+.settings-panel{margin-top:8px}
+.settings-panel label{margin-top:8px}
+.settings-panel .small{margin:5px 0}
+@media(min-width:750px){.preview-panel .preview{max-height:46vh}}
+
+.tabs{display:flex;gap:6px;margin:6px 0}.tabs button{margin:0;padding:10px 5px;font-size:14px;background:#e9ecef;color:#333}.tabs button.active{background:#d92d29;color:white}.bubble-controls{display:none}.bubble-controls[open]{display:block}.bubble-controls summary{display:none}.tabs button{flex:1;min-width:0}.arrow-controls{display:none}.arrow-controls.active{display:block}.hint{background:#fff5e8;padding:9px;border-radius:8px;font-size:13px}.preview-panel .preview{touch-action:none}
+
+.color-picker{width:100%;height:44px;border:1px solid #bbb;border-radius:8px;background:#fff}
+@media(max-width:650px){
+ .wrap{display:flex;flex-direction:column;padding:8px;gap:7px}
+ .wrap>h1{order:0;font-size:18px;margin:3px 2px}
+ .wrap>.note{order:3;margin:0 2px;font-size:11px}
+ .preview-panel{order:1;position:sticky;top:env(safe-area-inset-top,0px);z-index:20;margin:0;padding:6px 8px;box-shadow:0 2px 12px #0003}
+ .preview-panel .preview{max-height:29dvh;min-height:75px;object-fit:contain}
+ .settings-panel{order:2;margin:0;padding:10px}
+ .compact-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+ .compact-actions #saveBubble{grid-column:auto}
+ .compact-actions button{font-size:12px;padding:9px 3px;min-height:43px;line-height:1.2}
+ .tabs button{min-height:44px}
+ .bubble-controls:not([open]){margin-top:3px}
+ .bubble-controls summary{font-size:13px;min-height:32px}
+ input[type=range]{min-height:32px}
+ button{min-height:42px}
+}
+#download{padding:7px 9px;margin:5px 0;font-size:13px;line-height:1.25}
+#download .download-header{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:3px;text-align:left}
+#download .download-header span{font-weight:700;white-space:nowrap;font-size:12px}
+#download .download-header button{width:auto;min-height:30px;padding:5px 9px;font-size:12px;margin:0;flex-shrink:0}
+#download>a{font-size:12px;text-align:center}
+#download>button{min-height:34px;padding:7px;font-size:12px;margin-top:4px}
+.black-input-label{display:flex;align-items:center;justify-content:space-between;gap:8px}.black-input-label button{width:auto;min-height:34px;padding:6px 12px;margin:2px 0;font-size:12px;white-space:nowrap}
+</style></head><body><main class="wrap"><h1>道路案内画像メーカー Ver.3.00 最適化版</h1><p class="note">赤枠の左上角を白縁付きの丸数字で隠すデザイン。黒・赤文字は下端（ベースライン）を揃え、黒文字を2段にできます。文字エリアと写真の高さを変更すると、赤枠全体の高さが自動で連動します。写真の左右と下の余白は同じ幅です。見本と同じ赤枠・白背景。赤枠の外側だけ透明なPNGを作成します。画像は端末内で処理されます。</p><section class="panel settings-panel"><div class="tabs"><button type="button" id="tabMain" class="active">文字・写真</button><button type="button" id="tabArrow">矢印</button><button type="button" id="tabBubble">吹出し</button></div><div id="mainControls"><div class="row"><div><label for="frameColor">赤枠の色</label><input id="frameColor" type="color" value="#ff302c" style="width:100%;height:46px;border:1px solid #bbb;border-radius:8px;background:white"></div><div><label for="numberColor">丸数字の色</label><input id="numberColor" type="color" value="#ff302c" style="width:100%;height:46px;border:1px solid #bbb;border-radius:8px;background:white"></div></div><div class="row"><button type="button" class="secondary" id="sameColors">丸数字を枠と同じ色に</button><button type="button" class="secondary" id="resetColors">色を赤に戻す</button></div><div class="row"><div><label for="number">① 番号</label><input id="number" type="text" value="1" maxlength="3"></div><div><label for="red">③ 赤文字</label><input id="red" type="text" value="左折"></div></div><div class="black-input-label"><label for="black">② 黒文字</label><button type="button" id="insertBlackSpace" class="secondary">空白を入力</button></div><input id="black" type="text" value="高架下のT字路を"><div class="row"><div><label for="blackSize">黒文字サイズ <output id="blackVal">100</output>px</label><input type="range" id="blackSize" min="35" max="155" value="100"></div><div><label for="redSize">赤文字サイズ <output id="redVal">130</output>px</label><input type="range" id="redSize" min="35" max="185" value="130"></div></div><p class="small">2段では黒文字を改行位置で分割します。赤文字は2段目の黒文字の直後に配置します。</p><label for="layout">文字の段数</label><select id="layout" style="width:100%;padding:12px;font-size:16px"><option value="one">1段（黒＋赤を横並び）</option><option value="two">2段（黒文字を2段・赤文字は2段目の後ろ）</option></select><div class="row"><div><label>文字エリアの高さ <output id="areaVal">210</output>px</label><input id="areaHeight" type="range" min="70" max="440" value="210"><button type="button" id="autoAreaHeight" class="secondary" style="margin-top:5px;min-height:42px;padding:8px 10px;font-size:14px">高さ補正（文字に合わせる）</button></div><div><label>2段の行間 <output id="lineVal">8</output>px</label><input id="lineGap" type="range" min="-100" max="65" value="8"></div></div><label for="breakAt">黒文字の改行位置（2段表示用）</label><input id="breakAt" type="number" min="1" max="40" value="6" inputmode="numeric" style="width:5.5em;max-width:50%;padding:7px 8px"><div class="row"><div><label>文字の左右位置 <output id="xVal">0</output></label><input id="textX" type="range" min="-140" max="180" value="0"></div><div><label>文字の上下位置 <output id="yVal">0</output></label><input id="textY" type="range" min="-300" max="90" value="0"></div></div><div class="row"><div><label>写真の縦サイズ <output id="photoHeightVal">693</output>px</label><input id="photoHeight" type="range" min="260" max="1100" step="1" value="693"></div></div><p class="small">写真の高さと文字エリアの高さに合わせて赤枠が自動で伸縮します。写真の左・右・下の余白は同じ幅（24px）に固定しています。</p><label for="photo">④ 道路写真</label><input id="photo" type="file" accept="image/*"><p class="small">写真を選んだら、下のプレビューで指を動かして位置を調整できます。ピンチ操作で拡大縮小もできます。</p><label for="zoom">写真の拡大率</label><input id="zoom" type="range" min="1" max="3" step="0.01" value="1"><div class="row"><button class="secondary" id="reset" type="button">写真位置をリセット</button><button class="secondary" id="sample" type="button">見本写真を使用</button></div></div><div id="arrowControls" class="arrow-controls"><label><input type="checkbox" id="arrowVisible"> 赤い矢印を表示する</label><p class="hint">「矢印を編集」を選び、写真の上の①始点・②曲がり・③先端（4点モードでは①始点・②③曲がり・④先端）を指で移動します。矢印以外の場所を動かしても写真は動きません。</p><div class="row"><button type="button" class="secondary" id="editArrow">矢印を編集</button><button type="button" class="secondary" id="editPhoto">写真を移動</button></div><label for="arrowMode">矢印の調整方法</label><select id="arrowMode" style="width:100%;padding:12px;font-size:16px"><option value="3">3点（従来の操作）</option><option value="4">4点（途中を2か所調整）</option></select><div class="row"><div><label for="arrowFillColor">矢印本体の色</label><input type="color" id="arrowFillColor" value="#ff1010" class="color-picker"></div><div><label for="arrowOutlineColor">矢印の縁取り色</label><input type="color" id="arrowOutlineColor" value="#ffffff" class="color-picker"></div></div><label>矢印の太さ <output id="arrowWidthVal">26</output>px</label><input id="arrowWidth" type="range" min="8" max="90" value="26"><label>白い縁取り <output id="arrowBorderVal">7</output>px</label><input id="arrowBorder" type="range" min="0" max="22" value="7"><label>矢印の先端の大きさ <output id="arrowHeadVal">70</output>px</label><input id="arrowHead" type="range" min="25" max="140" value="70"><div class="row"><button type="button" id="resetArrow" class="secondary">矢印を初期位置に</button><button type="button" id="removeArrow" class="secondary">矢印を消す</button></div><p class="small">設定した色の矢印と縁取りは写真の上に描画され、PNGにも保存されます。操作用の①②③（4点では④も）は保存されません。</p></div><details class="bubble-controls" id="bubbleControls"><summary>吹き出しの色・線・位置を調整</summary><p class="small">吹き出しは白色固定。囲み線は白または赤枠と同じ色を選択できます。</p><label for="tailStrokeMode">吹き出しの囲み線</label><select id="tailStrokeMode" style="width:100%;padding:10px;font-size:16px"><option value="frame">赤枠と同じ色</option><option value="white">白</option></select><label class="check"><input id="tailBadgeVisible" type="checkbox" checked> 吹き出しの先に丸数字を表示</label><label for="tailSide">吹き出しを出す方向</label><select id="tailSide" style="width:100%;padding:12px;font-size:16px"><option value="bottom">下</option><option value="top">上</option><option value="left">左</option><option value="right">右</option></select><div class="row"><div><label>接続する辺の位置 <output id="tailXVal">45</output>%</label><input id="tailX" type="range" min="-5" max="105" value="45"></div><div><label>吹き出しの長さ <output id="tailLengthVal">240</output>px</label><input id="tailLength" type="range" min="120" max="520" value="240"></div></div><label>吹き出しの角度 <output id="tailAngleVal">0</output>°</label><input id="tailAngle" type="range" min="-65" max="65" step="1" value="0"><div class="row"><button type="button" class="secondary" id="tailAngleReset">角度を0°に戻す</button></div><p class="small">角度0°は辺に対して垂直です。マイナス・プラスで吹き出しの先端を左右（横向きの場合は上下）に振ります。</p><p class="small">接続部の赤枠線は消し、吹き出しと案内の白い面をつなぎます。外側は透明です。</p></details></section><section class="panel preview-panel"><canvas id="preview" class="preview" width="1536" height="969"></canvas><canvas id="bubblePreview" class="preview" width="1536" height="969" style="display:none;touch-action:auto" aria-label="吹き出し付き画像のプレビュー"></canvas><div class="compact-actions"><button id="saveBubble" type="button" style="background:#b51f25">吹き出し付きPNG保存</button><button id="save" type="button">通常PNG保存</button><button id="saveBadge" class="secondary" type="button">丸数字PNG保存</button></div><div id="download" role="status"></div><p class="note">iPhoneでは保存後に表示される共有メニューから「画像を保存」または「“ファイル”に保存」を選べます。Safariの環境によってはダウンロードリンクから保存してください。</p></section></main><script>
+(()=>{'use strict';const W=1536,canvas=document.getElementById('preview'),ctx=canvas.getContext('2d');const $=id=>document.getElementById(id);let photo=null,offsetX=0,offsetY=0,zoom=1,baseScale=1;const numberIcon=new Image();numberIcon.onload=()=>draw();numberIcon.src='data:image/png;base64,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';const rect={x:98,y:244,w:1364,h:693};const pointers=new Map();let previousGesture=null;let objectURL=null;
+let editMode='photo', activeHandle=-1, pointerStart=null, isExport=false, bubbleFrameMode=false;
+let arrowMode=3;const arrowPts=[{x:.53,y:.89},{x:.72,y:.82},{x:.74,y:.57}];
+function arrowPoint(p){return{x:rect.x+p.x*rect.w,y:rect.y+p.y*rect.h}}
+function drawArrow(){if(!$('arrowVisible').checked)return;
+ const pts=arrowPts.map(arrowPoint),a=pts[0],c=pts[pts.length-1];
+ const w=+$('arrowWidth').value, border=+$('arrowBorder').value, head=+$('arrowHead').value;
+ const prev=pts[pts.length-2];
+ const tangent=arrowMode===4?Math.atan2(c.y-prev.y,c.x-prev.x):Math.atan2(c.y-prev.y,c.x-prev.x);
+ const wing=.64,back=head;
+ const left={x:c.x-back*Math.cos(tangent-wing),y:c.y-back*Math.sin(tangent-wing)};
+ const right={x:c.x-back*Math.cos(tangent+wing),y:c.y-back*Math.sin(tangent+wing)};
+ ctx.save();ctx.beginPath();ctx.rect(rect.x,rect.y,rect.w,rect.h);ctx.clip();
+ function stroke(color,width){ctx.beginPath();ctx.moveTo(a.x,a.y);
+ if(arrowMode===4)ctx.bezierCurveTo(pts[1].x,pts[1].y,pts[2].x,pts[2].y,c.x,c.y);
+ else ctx.quadraticCurveTo(pts[1].x,pts[1].y,c.x,c.y);
+ ctx.lineTo(left.x,left.y);ctx.moveTo(c.x,c.y);ctx.lineTo(right.x,right.y);
+ ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke()}
+ stroke($('arrowOutlineColor').value,w+border*2);stroke($('arrowFillColor').value,w);
+ if(editMode==='arrow'&&!isExport){pts.forEach((p,i)=>{ctx.beginPath();ctx.arc(p.x,p.y,21,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.lineWidth=4;ctx.strokeStyle='#1677cc';ctx.stroke();ctx.font='bold 25px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#1677cc';ctx.fillText(String(i+1),p.x,p.y+1)})}
+ ctx.restore();}
+
+function roundedRect(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}
+function fitText(s,maxW,maxSize,minSize=25){let size=maxSize;while(size>minSize){ctx.font=`900 ${size}px -apple-system,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif`;if(ctx.measureText(s).width<=maxW)break;size-=1}return size}
+function draw(){const desiredPhoto=Number($('photoHeight').value);const desiredArea=Number($('areaHeight').value);const twoRows=$('layout').value==='two';const bs0=Number($('blackSize').value),rs0=Number($('redSize').value);const imageY=53+desiredArea;const H=Math.ceil(imageY+desiredPhoto+64);if(canvas.height!==H)canvas.height=H;ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';roundedRect(64,30,1432,H-60,21);ctx.fill();ctx.lineWidth=20;ctx.strokeStyle=$('frameColor').value;if(!bubbleFrameMode)ctx.stroke();let n=$('number').value||'1';{ctx.beginPath();ctx.arc(118,118,110,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.beginPath();ctx.arc(118,118,94,0,Math.PI*2);ctx.fillStyle=$('numberColor').value;ctx.fill();ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`400 ${fitText(n,148,125,48)}px Arial,sans-serif`;ctx.fillText(n,118,118)}
+const black=$('black').value,red=$('red').value;
+const two=$('layout').value==='two';
+const bs=Number($('blackSize').value),rs=Number($('redSize').value);
+const font=(z)=>`900 ${z}px -apple-system,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif`;
+const x=294+Number($('textX').value), shift=Number($('textY').value);
+const desiredHeight=Number($('areaHeight').value), lineGap=Number($('lineGap').value);
+const areaTop=53, room=1460-x;
+let first=black,second='';
+if(two){const normalized=black.replace(/\r/g,'');if(normalized.includes('\n')){const parts=normalized.split('\n');first=parts.shift();second=parts.join('')}else{const at=Math.min(Math.max(1,Number($('breakAt').value)||6),Math.max(1,Array.from(black).length-1));const chars=Array.from(black);first=chars.slice(0,at).join('');second=chars.slice(at).join('')}}else{first=black.replace(/[\r\n]/g,'')}
+ctx.textAlign='left';ctx.textBaseline='alphabetic';
+ctx.font=font(bs);const widthFirst=ctx.measureText(first).width;
+ctx.font=font(bs);const widthSecond=ctx.measureText(second).width;
+ctx.font=font(rs);const widthRed=ctx.measureText(red).width;
+const neededWidth=two?Math.max(widthFirst,widthSecond+widthRed+14):widthFirst+widthRed+14;
+const scale=Math.min(1,Math.max(0.1,room/Math.max(1,neededWidth)));
+const blackPx=bs*scale,redPx=rs*scale;
+const rowHeight=blackPx*1.12;
+const minArea=two?Math.ceil(Math.max(rowHeight,rowHeight*2+lineGap)+42):Math.ceil(rowHeight+44);
+const actualHeight=desiredHeight;
+rect.y=areaTop+actualHeight;rect.h=desiredPhoto;
+// 両色の文字を中央揃えにせず、同一行のベースライン（文字の下）に揃える。
+// 2段時は黒文字だけを改行し、赤文字を2段目の直後へ置く。
+const bottomBaseline=rect.y-35+shift;
+const upperBaseline=bottomBaseline-(rowHeight+lineGap);
+ctx.font=font(blackPx);ctx.fillStyle='#080808';
+if(two){ctx.fillText(first,x,upperBaseline);ctx.fillText(second,x,bottomBaseline)}else{ctx.fillText(first,x,bottomBaseline)}
+ctx.font=font(redPx);ctx.fillStyle='#ff302c';
+ctx.font=font(blackPx);const lastWidth=ctx.measureText(two?second:first).width;
+ctx.font=font(redPx);ctx.fillText(red,x+lastWidth+14,bottomBaseline);
+ctx.save();ctx.beginPath();ctx.rect(rect.x,rect.y,rect.w,rect.h);ctx.clip();if(photo){const scale=Math.max(rect.w/photo.width,rect.h/photo.height)*zoom;const dw=photo.width*scale,dh=photo.height*scale;ctx.drawImage(photo,rect.x+(rect.w-dw)/2+offsetX,rect.y+(rect.h-dh)/2+offsetY,dw,dh)}else{ctx.fillStyle='#e9ecef';ctx.fillRect(rect.x,rect.y,rect.w,rect.h);ctx.fillStyle='#667085';ctx.textAlign='center';ctx.font='bold 45px sans-serif';ctx.fillText('ここに道路写真を配置',rect.x+rect.w/2,rect.y+rect.h/2)}ctx.restore();drawArrow()}
+function load(src){const img=new Image();img.onload=()=>{photo=img;offsetX=offsetY=0;zoom=1;$('zoom').value='1';draw()};img.onerror=()=>alert('画像を読み込めませんでした。JPEGまたはPNGをお試しください。');img.src=src}
+$('photo').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const url=URL.createObjectURL(f);const im=new Image();im.onload=()=>{photo=im;offsetX=offsetY=0;zoom=1;$('zoom').value='1';draw();URL.revokeObjectURL(url)};im.onerror=()=>{URL.revokeObjectURL(url);alert('写真の読み込みに失敗しました。')};im.src=url});
+for(const id of ['frameColor','numberColor','number','black','red','blackSize','redSize','layout','textX','textY','areaHeight','lineGap','breakAt','photoHeight'])$(id).addEventListener('input',()=>{for(const [a,b] of [['blackSize','blackVal'],['redSize','redVal'],['textX','xVal'],['textY','yVal'],['areaHeight','areaVal'],['lineGap','lineVal'],['photoHeight','photoHeightVal']])$(b).textContent=$(a).value;draw()});// Fit the header height to actual text glyph bounds; leave font sizes and spacing unchanged.
+$('autoAreaHeight').onclick=()=>{
+ const black=$('black').value,red=$('red').value;
+ const two=$('layout').value==='two';
+ let first=black,second='';
+ if(two){
+   const normalized=black.replace(/\r/g,'');
+   if(normalized.includes('\n')){const parts=normalized.split('\n');first=parts.shift();second=parts.join('')}
+   else{const chars=Array.from(black);const at=Math.min(Math.max(1,Number($('breakAt').value)||6),Math.max(1,chars.length-1));first=chars.slice(0,at).join('');second=chars.slice(at).join('')}
+ }else first=black.replace(/[\r\n]/g,'');
+ const bs=Number($('blackSize').value),rs=Number($('redSize').value);
+ const x=294+Number($('textX').value),room=1460-x;
+ const font=z=>`900 ${z}px -apple-system,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif`;
+ const g=document.createElement('canvas').getContext('2d');
+ g.font=font(bs);const w1=g.measureText(first).width,w2=g.measureText(second).width;
+ g.font=font(rs);const wr=g.measureText(red).width;
+ const need=two?Math.max(w1,w2+wr+14):w1+wr+14;
+ const scale=Math.min(1,Math.max(.1,room/Math.max(1,need)));
+ const blackPx=bs*scale,redPx=rs*scale;
+ const ascent=(str,px)=>{if(!str)return 0;g.font=font(px);const m=g.measureText(str);return Number.isFinite(m.actualBoundingBoxAscent)?m.actualBoundingBoxAscent:px*.95};
+ const rowHeight=blackPx*1.12;
+ const gap=Number($('lineGap').value),shift=Number($('textY').value);
+ const topAscent=ascent(first,blackPx);
+ const lowerAscent=ascent(two?second:first,blackPx);
+ // Vertical correction is based on black text only; red text may extend above it.
+ // top line may be above or below second line when negative gap is used.
+ const topFromBottom=two?Math.max(rowHeight+gap+topAscent,lowerAscent):lowerAscent;
+ const topPadding=18;
+ const ideal=Math.ceil(35-shift+topFromBottom+topPadding);
+ const slider=$('areaHeight');
+ // Widen the slider's upper limit if large text or negative text offset requires it.
+ slider.max=String(Math.max(440,ideal));
+ slider.value=String(Math.max(70,ideal));
+ $('areaVal').textContent=slider.value;
+ draw();
+};
+$('sameColors').onclick=()=>{$('numberColor').value=$('frameColor').value;draw()};$('resetColors').onclick=()=>{$('frameColor').value='#ff302c';$('numberColor').value='#ff302c';draw()};$('zoom').addEventListener('input',e=>{zoom=Number(e.target.value);draw()});$('reset').onclick=()=>{offsetX=offsetY=0;zoom=1;$('zoom').value='1';draw()};$('sample').onclick=()=>load('data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1364" height="693"><rect width="1364" height="693" fill="#cbd5dc"/><rect y="330" width="1364" height="363" fill="#737d7c"/><path d="M500 693 L640 330 L900 330 L1180 693" fill="#555e60"/><path d="M0 600L450 350" stroke="#fff" stroke-width="12"/><path d="M1080 400L1350 690" stroke="#fff" stroke-width="12"/><text x="680" y="180" text-anchor="middle" font-size="55" fill="#364152">仮写真・実際の道路写真に差し替えてください</text></svg>'));
+function pos(e){const b=canvas.getBoundingClientRect();return{x:(e.clientX-b.left)*W/b.width,y:(e.clientY-b.top)*canvas.height/b.height}}function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}canvas.addEventListener('pointerdown',e=>{const p=pos(e);if(editMode==='arrow'&&$('arrowVisible').checked){const d=arrowPts.map(q=>dist(p,arrowPoint(q)));const nearest=d.indexOf(Math.min(...d));if(d[nearest]<85){activeHandle=nearest;canvas.setPointerCapture(e.pointerId)}return}canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,p);previousGesture=null});
+canvas.addEventListener('pointermove',e=>{const p=pos(e);if(editMode==='arrow'){if(activeHandle>=0){arrowPts[activeHandle]={x:Math.max(0,Math.min(1,(p.x-rect.x)/rect.w)),y:Math.max(0,Math.min(1,(p.y-rect.y)/rect.h))};draw()}return}if(!pointers.has(e.pointerId)||!photo)return;const old=pointers.get(e.pointerId);pointers.set(e.pointerId,p);const pts=[...pointers.values()];if(pts.length===1){offsetX+=p.x-old.x;offsetY+=p.y-old.y}else if(pts.length>=2){const d=dist(pts[0],pts[1]);if(previousGesture){zoom=Math.min(3,Math.max(1,zoom*d/previousGesture));$('zoom').value=String(zoom)}previousGesture=d}draw()});
+function end(e){activeHandle=-1;pointers.delete(e.pointerId);previousGesture=null}canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
+function mode(m){editMode=m;$('editArrow').style.background=m==='arrow'?'#d92d29':'#344054';$('editPhoto').style.background=m==='photo'?'#d92d29':'#344054';draw()}
+function switchTab(tab){
+ $('mainControls').style.display=tab==='main'?'block':'none';
+ $('arrowControls').classList.toggle('active',tab==='arrow');
+ $('bubbleControls').open=tab==='bubble';
+ for(const [id,which] of [['tabMain','main'],['tabArrow','arrow'],['tabBubble','bubble']])$(id).classList.toggle('active',tab===which);
+ mode(tab==='arrow'?'arrow':'photo');
+ $('preview').style.display=tab==='bubble'?'none':'block';
+ $('bubblePreview').style.display=tab==='bubble'?'block':'none';
+ if(tab==='bubble')requestBubblePreview();
+}
+$('insertBlackSpace').onclick=()=>{const input=$('black');const start=input.selectionStart??input.value.length;const end=input.selectionEnd??start;input.setRangeText('　',start,end,'end');input.dispatchEvent(new Event('input',{bubbles:true}))};
+$('tabMain').onclick=()=>switchTab('main');
+$('tabArrow').onclick=()=>switchTab('arrow');
+$('tabBubble').onclick=()=>switchTab('bubble');
+$('editArrow').onclick=()=>mode('arrow');$('editPhoto').onclick=()=>mode('photo');
+$('arrowVisible').onchange=draw; $('arrowFillColor').oninput=draw; $('arrowOutlineColor').oninput=draw; $('arrowMode').onchange=()=>{arrowMode=Number($('arrowMode').value);if(arrowMode===4){const a=arrowPts[0],b=arrowPts[1],c=arrowPts[2];arrowPts.splice(0,3,a,{x:(a.x+b.x)/2,y:(a.y+b.y)/2},{x:(b.x+c.x)/2,y:(b.y+c.y)/2},c)}else{const a=arrowPts[0],c=arrowPts[3],b={x:(arrowPts[1].x+arrowPts[2].x)/2,y:(arrowPts[1].y+arrowPts[2].y)/2};arrowPts.splice(0,4,a,b,c)}draw()};
+for(const id of ['arrowWidth','arrowBorder','arrowHead'])$(id).oninput=()=>{$(id+'Val').textContent=$(id).value;draw()};
+$('resetArrow').onclick=()=>{arrowPts.splice(0,arrowPts.length,...(arrowMode===4?[{x:.53,y:.89},{x:.63,y:.86},{x:.72,y:.72},{x:.74,y:.57}]:[{x:.53,y:.89},{x:.72,y:.82},{x:.74,y:.57}]));$('arrowVisible').checked=true;mode('arrow')};
+$('removeArrow').onclick=()=>{$('arrowVisible').checked=false;draw()};
+ const bubblePerimeterCache={height:null,points:null};
+ function drawBubble(){
+  isExport=true;bubbleFrameMode=true;draw();
+  const H=canvas.height, side=$('tailSide').value;
+  const len=Number($('tailLength').value), pct=Number($('tailX').value)/100;
+  const fill='#ffffff', frame=$('frameColor').value;
+  const border=true, stroke=$('tailStrokeMode').value==='white'?'#ffffff':frame;
+  const showTailBadge=$('tailBadgeVisible').checked;
+  const half=76, r=78, gap=36, outer=18;
+  const minX=64,maxX=1496,minY=30,maxY=H-30;
+  const along=(side==='top'||side==='bottom')
+    ?minX+half+22+(maxX-minX-2*(half+22))*pct
+    :minY+half+22+(maxY-minY-2*(half+22))*pct;
+  const base=side==='top'?{x:along,y:minY}:side==='bottom'?{x:along,y:maxY}
+    :side==='left'?{x:minX,y:along}:{x:maxX,y:along};
+  const normal=side==='top'?{x:0,y:-1}:side==='bottom'?{x:0,y:1}
+    :side==='left'?{x:-1,y:0}:{x:1,y:0};
+  const tangent={x:-normal.y,y:normal.x};
+  const angle=Number($('tailAngle').value)*Math.PI/180;
+  const travel=len+r+gap;
+  const direction={x:normal.x*Math.cos(angle)+tangent.x*Math.sin(angle),
+                   y:normal.y*Math.cos(angle)+tangent.y*Math.sin(angle)};
+  const badge={x:base.x+direction.x*travel,y:base.y+direction.y*travel};
+  // Keep the tail tip on the same angled centerline as the badge.
+  const tip={x:badge.x-direction.x*(r+gap-12),
+             y:badge.y-direction.y*(r+gap-12)};
+  const left={x:base.x-tangent.x*half,y:base.y-tangent.y*half};
+  const right={x:base.x+tangent.x*half,y:base.y+tangent.y*half};
+  const margin=r+outer+18;
+  const shiftX=Math.max(0,margin-badge.x),shiftY=Math.max(0,margin-badge.y);
+  const out=document.createElement('canvas');
+  out.width=Math.ceil(Math.max(W+shiftX,badge.x+shiftX+margin));
+  out.height=Math.ceil(Math.max(H+shiftY,badge.y+shiftY+margin));
+  const g=out.getContext('2d');g.translate(shiftX,shiftY);
+  // Rounded rectangle perimeter, sampled clockwise. A tail may cross a rounded
+  // corner: intersect both extended tail edges with the ACTUAL perimeter.
+  // Reuse the same sampled rounded frame perimeter until frame height changes.
+  let perimeter=bubblePerimeterCache.points;
+  if(bubblePerimeterCache.height!==H || !perimeter){
+    perimeter=[];
+    function pt(x,y){perimeter.push({x,y})}
+    function corner(cx,cy,rx,ry,a0,a1){
+      for(let k=1;k<=20;k++){const a=a0+(a1-a0)*k/20;pt(cx+rx*Math.cos(a),cy+ry*Math.sin(a))}
+    }
+    pt(85,minY);pt(1475,minY);
+    corner(1475,51,21,21,-Math.PI/2,0);
+    pt(maxX,H-51);corner(1475,H-51,21,21,0,Math.PI/2);
+    pt(85,maxY);corner(85,H-51,21,21,Math.PI/2,Math.PI);
+    pt(minX,51);corner(85,51,21,21,Math.PI,3*Math.PI/2);
+    bubblePerimeterCache.height=H;
+    bubblePerimeterCache.points=perimeter;
+  }
+  const n=perimeter.length;
+  // Intersect an infinite tail-edge line with each perimeter segment.
+  // Choose the crossing closest to the nominal attachment point.
+  function intersection(anchor){
+    const vx=anchor.x-tip.x,vy=anchor.y-tip.y;
+    let best=null;
+    for(let i=0;i<n;i++){
+      const a=perimeter[i],b=perimeter[(i+1)%n],sx=b.x-a.x,sy=b.y-a.y;
+      const den=vx*sy-vy*sx;
+      if(Math.abs(den)<1e-8)continue;
+      const dx=a.x-tip.x,dy=a.y-tip.y;
+      const t=(dx*sy-dy*sx)/den,u=(dx*vy-dy*vx)/den;
+      if(t<0||u<0||u>1)continue;
+      const x=tip.x+t*vx,y=tip.y+t*vy;
+      const d=(x-anchor.x)**2+(y-anchor.y)**2;
+      if(!best||d<best.d)best={x,y,pos:i+u,d};
+    }
+    return best;
+  }
+  // For extreme angles a ray may miss the rectangle: use nearest perimeter point.
+  function nearest(anchor){
+    let best=null;
+    for(let i=0;i<n;i++){
+      const a=perimeter[i],b=perimeter[(i+1)%n];
+      const dx=b.x-a.x,dy=b.y-a.y;
+      const u=Math.max(0,Math.min(1,((anchor.x-a.x)*dx+(anchor.y-a.y)*dy)/(dx*dx+dy*dy||1)));
+      const x=a.x+u*dx,y=a.y+u*dy,d=(x-anchor.x)**2+(y-anchor.y)**2;
+      if(!best||d<best.d)best={x,y,pos:i+u,d};
+    }
+    return best;
+  }
+  const edgeA=intersection(left)||nearest(left);
+  const edgeB=intersection(right)||nearest(right);
+  // Choose the perimeter interval that contains the nominal attachment center.
+  const center=nearest(base).pos;
+  const forward=(a,b)=>(b-a+n)%n;
+  let start=edgeA,end=edgeB;
+  if(forward(start.pos,center)>forward(start.pos,end.pos)){
+    start=edgeB;end=edgeA;
+  }
+  // Draw panel and tail as a single filled silhouette, avoiding seam artifacts.
+  g.beginPath();g.moveTo(start.x,start.y);g.lineTo(tip.x,tip.y);g.lineTo(end.x,end.y);
+  const endIndex=Math.floor(end.pos),startIndex=Math.floor(start.pos);
+  let idx=(endIndex+1)%n;
+  for(let steps=0;steps<n && forward(end.pos,idx)<forward(end.pos,start.pos);steps++){
+    g.lineTo(perimeter[idx].x,perimeter[idx].y);idx=(idx+1)%n;
+  }
+  g.lineTo(start.x,start.y);g.closePath();g.fillStyle='#fff';g.fill();
+  g.drawImage(canvas,0,0);
+  // Refill the tail junction over the photo canvas (whose border is suppressed).
+  g.beginPath();g.moveTo(start.x,start.y);g.lineTo(tip.x,tip.y);
+  g.lineTo(end.x,end.y);g.closePath();g.fillStyle='#fff';g.fill();
+  // The tail's white triangle may extend across the photo near a corner.
+  // Restore the exact original photo pixels after the white junction fill.
+  // This protects every corner of the rectangular photograph.
+  g.drawImage(canvas,rect.x,rect.y,rect.w,rect.h,rect.x,rect.y,rect.w,rect.h);
+  // One uninterrupted external outline, including corners outside the side.
+  g.beginPath();g.moveTo(start.x,start.y);g.lineTo(tip.x,tip.y);g.lineTo(end.x,end.y);
+  idx=(endIndex+1)%n;
+  for(let steps=0;steps<n && forward(end.pos,idx)<forward(end.pos,start.pos);steps++){
+    g.lineTo(perimeter[idx].x,perimeter[idx].y);idx=(idx+1)%n;
+  }
+  g.closePath();g.strokeStyle=frame;g.lineWidth=20;g.lineJoin='round';g.lineCap='round';g.stroke();
+  if(stroke!==frame){
+    g.beginPath();g.moveTo(start.x,start.y);g.lineTo(tip.x,tip.y);g.lineTo(end.x,end.y);
+    g.strokeStyle=stroke;g.lineWidth=20;g.lineJoin='round';g.lineCap='round';g.stroke();
+  }
+  // Cover the junction with the tail's own fill only; no rectangle overlays.
+  // Badge drawn after the perimeter, so it hides the endpoint cleanly.
+  function badgeDraw(x,y,rad,n){
+    g.beginPath();g.arc(x,y,rad+8,0,Math.PI*2);g.fillStyle='#fff';g.fill();
+    g.beginPath();g.arc(x,y,rad-6,0,Math.PI*2);
+    g.fillStyle=$('numberColor').value;g.fill();
+    g.textAlign='center';g.textBaseline='middle';g.fillStyle='#fff';
+    let sz=rad*1.4;do{
+      g.font=`900 ${sz}px -apple-system,Arial,sans-serif`;
+      if(g.measureText(n).width<=rad*1.45)break;sz-=3;
+    }while(sz>30);
+    g.fillText(n,x,y+2);
+  }
+  badgeDraw(118,118,102,$('number').value||'1');
+  if(border){
+    g.beginPath();g.moveTo(start.x,start.y);g.lineTo(tip.x,tip.y);
+    g.lineTo(end.x,end.y);g.strokeStyle=stroke;g.lineWidth=13;
+    g.lineJoin='round';g.lineCap='butt';g.stroke();
+  }
+  if(showTailBadge)badgeDraw(badge.x,badge.y,r,$('number').value||'1');
+  bubbleFrameMode=false;isExport=false;draw();return out;
+}
+// Preview uses the exact same renderer as the exported bubble PNG.
+let bubblePreviewPending=false;
+function requestBubblePreview(){
+ if(!$('tabBubble').classList.contains('active')||bubblePreviewPending)return;
+ bubblePreviewPending=true;
+ requestAnimationFrame(()=>{
+  bubblePreviewPending=false;
+  if(!$('tabBubble').classList.contains('active'))return;
+  try{
+   const rendered=drawBubble();
+   const preview=$('bubblePreview');
+   if(preview.width!==rendered.width)preview.width=rendered.width;
+   if(preview.height!==rendered.height)preview.height=rendered.height;
+   const c=preview.getContext('2d');
+   c.clearRect(0,0,preview.width,preview.height);
+   c.drawImage(rendered,0,0);
+  }catch(err){console.error('吹き出しプレビュー:',err)}
+ });
+}
+for(const id of ['tailSide','tailAngle','tailX','tailLength','tailBadgeVisible','tailStrokeMode','frameColor','numberColor','number']){
+ $(id).addEventListener('input',requestBubblePreview);
+ $(id).addEventListener('change',requestBubblePreview);
+}
+$('tailAngleReset').addEventListener('click',requestBubblePreview);
+$('tailSide').onchange=()=>{};
+$('tailAngle').oninput=()=>{$('tailAngleVal').textContent=$('tailAngle').value};
+$('tailAngleReset').onclick=()=>{$('tailAngle').value=0;$('tailAngleVal').textContent='0'};
+$('tailX').oninput=()=>{$('tailXVal').textContent=$('tailX').value};
+$('tailLength').oninput=()=>{$('tailLengthVal').textContent=$('tailLength').value};
+$('saveBubble').onclick=()=>{if(!photo){alert('道路写真を選択してください。');return}
+ const c=drawBubble();c.toBlob(blob=>{if(!blob){alert('画像を作成できませんでした');return}
+ const url=URL.createObjectURL(blob),name=`吹き出し道路案内_${$('number').value||'1'}.png`;
+ const box=$('download');box.style.display='block';box.replaceChildren();
+ const a=document.createElement('a');a.href=url;a.download=name;a.textContent='吹き出し付き透過PNGをダウンロード';box.append(a);
+ if(navigator.canShare&&navigator.share){const file=new File([blob],name,{type:'image/png'});if(navigator.canShare({files:[file]})){
+ const b=document.createElement('button');b.textContent='iPhoneの共有メニューで保存';b.onclick=async()=>{try{await navigator.share({files:[file],title:name})}catch(e){if(e.name!=='AbortError')alert('共有できませんでした')}};box.append(b)}}
+ },'image/png')};
+$('saveBadge').onclick=()=>{const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');const n=$('number').value||'1';g.beginPath();g.arc(128,128,123,0,Math.PI*2);g.fillStyle='#ffffff';g.fill();g.beginPath();g.arc(128,128,105,0,Math.PI*2);g.fillStyle=$('numberColor').value;g.fill();g.fillStyle='#ffffff';g.textAlign='center';g.textBaseline='middle';let sz=158;do{g.font=`400 ${sz}px Arial,sans-serif`;if(g.measureText(n).width<=180)break;sz-=2}while(sz>40);g.fillText(n,128,128);c.toBlob(blob=>{if(!blob)return alert('丸数字PNGを作成できませんでした');const url=URL.createObjectURL(blob);const name=`丸数字_${n.replace(/[\\/:*?"<>|]/g,'_')}.png`;const box=$('download');box.style.display='block';box.replaceChildren();const a=document.createElement('a');a.href=url;a.download=name;a.textContent='丸数字PNGをダウンロード';box.append(a);if(navigator.canShare&&navigator.share){const f=new File([blob],name,{type:'image/png'});if(navigator.canShare({files:[f]})){const b=document.createElement('button');b.textContent='iPhoneの共有メニューで保存';b.onclick=async()=>{try{await navigator.share({files:[f],title:name})}catch(e){if(e.name!=='AbortError')alert('共有できませんでした')}};box.append(b)}}},'image/png')};
+$('save').onclick=async()=>{if(!photo){alert('道路写真を選択してください。');return}isExport=true;draw();canvas.toBlob(async blob=>{if(!blob){alert('画像を作成できませんでした');return}if(objectURL)URL.revokeObjectURL(objectURL);objectURL=URL.createObjectURL(blob);const name=`道路案内_${$('number').value||'1'}.png`;const box=$('download');box.style.display='block';box.replaceChildren();const a=document.createElement('a');a.href=objectURL;a.download=name;a.textContent='PNGをダウンロード';box.append(a);if(navigator.canShare&&navigator.share){const file=new File([blob],name,{type:'image/png'});if(navigator.canShare({files:[file]})){const share=document.createElement('button');share.textContent='iPhoneの共有メニューで保存';share.onclick=async()=>{try{await navigator.share({files:[file],title:name})}catch(e){if(e.name!=='AbortError')alert('共有できませんでした。ダウンロードをご利用ください。')}};box.append(share)}}},'image/png');isExport=false;draw()};draw();})();
+</script><script>
+// Move preview before the settings without changing the rendering logic.
+const previewPanel=document.querySelector('.preview-panel');
+const settingsPanel=document.querySelector('.settings-panel');
+settingsPanel.parentNode.insertBefore(previewPanel,settingsPanel);
+</script><script>
+// Ver.3.00 最適化版: keep the download result accessible, but never let it obscure editing.
+(function(){
+ const box=document.getElementById('download');
+ const close=document.createElement('button');
+ close.type='button';close.textContent='閉じる ×';close.className='secondary';
+ close.style.cssText='width:auto;min-width:86px;margin:0 0 8px auto;display:block';
+ const observer=new MutationObserver(()=>{
+   if(box.style.display==='block' && !box.querySelector('[data-close-download]')){
+     const b=close.cloneNode(true);b.dataset.closeDownload='1';
+     b.onclick=()=>{box.style.display='none'};
+     box.prepend(b);
+   }
+ });
+ observer.observe(box,{childList:true});
+ document.addEventListener('focusin',e=>{
+   if(e.target.matches('input,textarea,select')) box.style.display='none';
+ });
+ box.addEventListener('click',e=>{
+   if(e.target.closest('a[download]'))box.style.display='none';
+ });
+})();
+</script>
+<script>
+/* Ver.3.00 最適化版: Edge/iOS export fallback, independent of legacy download panel. */
+(function(){
+ const $=id=>document.getElementById(id);
+ const box=$('download');
+ let currentUrl=null;
+ const escapeName=n=>String(n||'1').replace(/[\\/:*?"<>|]/g,'_');
+ function showError(e){
+   box.replaceChildren();
+   box.style.display='block';
+   const p=document.createElement('p');
+   p.textContent='画像の保存準備に失敗しました：'+(e?.message||String(e));
+   box.append(p);
+ }
+ function present(blob,name){
+   if(!blob||!blob.size)throw Error('PNGデータを作成できませんでした');
+   if(currentUrl)URL.revokeObjectURL(currentUrl);
+   currentUrl=URL.createObjectURL(blob);
+   box.replaceChildren();box.style.display='block';
+   const header=document.createElement('div');header.className='download-header';
+   const title=document.createElement('span');title.textContent='PNG作成完了 · '+Math.round(blob.size/1024)+'KB';header.append(title);
+   const topClose=document.createElement('button');topClose.type='button';topClose.className='secondary';topClose.dataset.closeDownload='1';topClose.textContent='閉じる ×';
+   topClose.onclick=()=>{box.style.display='none'};header.append(topClose);box.append(header);
+   const link=document.createElement('a');link.href=currentUrl;link.download=name;
+   link.textContent='① PNGをダウンロード';link.style.cssText='display:block;padding:8px;background:white;border-radius:7px;margin:4px 0';
+   box.append(link);
+   const view=document.createElement('a');view.href=currentUrl;view.target='_blank';view.rel='noopener';
+   view.textContent='② 画像を開く（長押しで保存）';
+   view.style.cssText='display:block;padding:8px;background:white;border-radius:7px;margin:4px 0';
+   box.append(view);
+   if(navigator.share&&navigator.canShare){
+     try{
+       const f=new File([blob],name,{type:'image/png'});
+       if(navigator.canShare({files:[f]})){
+         const b=document.createElement('button');b.type='button';b.textContent='③ 共有メニューで保存';
+         b.onclick=async()=>{try{await navigator.share({files:[f],title:name})}catch(e){if(e.name!=='AbortError')alert('共有できませんでした：'+e.message)}};
+         box.append(b);
+       }
+     }catch(e){}
+   }
+ }
+ function exportCanvas(c,name){
+   try{
+     if(!c||!c.width||!c.height)throw Error('キャンバスのサイズが不正です');
+     // Data URL path is a useful fallback for Edge opening local HTML files.
+     if(typeof c.toBlob==='function'){
+       c.toBlob(blob=>{
+         try{
+           if(blob&&blob.size){present(blob,name);return}
+           const data=c.toDataURL('image/png');
+           fetch(data).then(r=>r.blob()).then(b=>present(b,name)).catch(showError);
+         }catch(e){showError(e)}
+       },'image/png');
+     }else{
+       const data=c.toDataURL('image/png');
+       fetch(data).then(r=>r.blob()).then(b=>present(b,name)).catch(showError);
+     }
+   }catch(e){showError(e)}
+ }
+ // Capture the existing export logic's canvas by wrapping toBlob on the
+ // preview and dynamically created bubble canvases, without altering rendering.
+ // Original save handlers are replaced using a capture-phase listener.
+ const originalToBlob=HTMLCanvasElement.prototype.toBlob;
+ let intercept=false,exportName='';
+ HTMLCanvasElement.prototype.toBlob=function(cb,type,quality){
+   if(intercept){
+     intercept=false;
+     exportCanvas(this,exportName);
+     return;
+   }
+   return originalToBlob.call(this,cb,type,quality);
+ };
+ for(const [id,prefix] of [['save','道路案内_'],['saveBubble','吹き出し道路案内_']]){
+   $(id).addEventListener('click',e=>{
+     e.stopImmediatePropagation();
+     if(!$('photo').files?.length && !window.__roadPhotoReady){
+       // A sample photo may be loaded without a file; defer to the original handler.
+       // The existing handler performs the authoritative photo validation.
+     }
+     const name=prefix+escapeName($('number').value)+'.png';
+     exportName=name;intercept=true;
+     try{
+       // Invoke the original onclick handler directly after capture interception.
+       const handler=$(id).onclick;
+       if(typeof handler==='function')handler.call($(id),e);
+       if(intercept)intercept=false;
+     }catch(err){intercept=false;showError(err)}
+   },true);
+ }
+})();
+</script>
+</body></html>
